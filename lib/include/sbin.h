@@ -127,6 +127,15 @@ typedef struct s_bin_plugin_t {
 	void *user;	//move this into Binfile
 } SBinPlugin;
 
+#define	SBIN_INFO_HAS_VA	1
+#define	SBIN_INFO_HAS_PI	2
+#define	SBIN_INFO_HAS_CANARY	4
+#define	SBIN_INFO_HAS_CRYPTO	8
+#define	SBIN_INFO_HAS_NX	16
+#define	SBIN_INFO_HAS_BIGENDIAN	32
+#define	SBIN_INFO_HAS_LIT	64
+#define	SBIN_INFO_HAS_SIGNATURE	128
+
 typedef struct s_bin_info_t {
 	char *file;
 	char *type;
@@ -142,17 +151,10 @@ typedef struct s_bin_info_t {
 	char *debug_file_name;
 	const char *lang;
 	int bits;
-	int has_va;
-	int has_pi; // pic/pie
-	int has_canary;
-	int has_crypto;
-	int has_nx;
-	int big_endian;
-	bool has_lit;
+	ut8 flags;
 	char *actual_checksum;
 	char *claimed_checksum;
 	int pe_overlay;
-	bool signature;
 	ut64 dbg_info;
 	SBinHash sum[3];
 	ut64 baddr;
@@ -173,6 +175,23 @@ typedef struct s_bin_t {
 
 SBinFile *s_bin_file_new (SBin *bin, SBinIo *io, const char *uri);
 SBinFile *s_bin_file_new_from_fd (SBin *bin, SBinIo *io, ut32 fd);
+
+void s_bin_info_set_va (SBinInfo *info, bool va);
+void s_bin_info_set_pi (SBinInfo *info, bool pi);
+void s_bin_info_set_canary (SBinInfo *info, bool canary);
+void s_bin_info_set_crypto (SBinInfo *info, bool crypto);
+void s_bin_info_set_nx (SBinInfo *info, bool nx);
+void s_bin_info_set_bigendian (SBinInfo *info, bool bigendian);
+void s_bin_info_set_lit (SBinInfo *info, bool lit);
+void s_bin_info_set_signature (SBinInfo *info, bool signature);
+bool s_bin_info_has_va (SBinInfo *info);
+bool s_bin_info_has_pi (SBinInfo *info);
+bool s_bin_info_has_canary (SBinInfo *info);
+bool s_bin_info_has_crypto (SBinInfo *info);
+bool s_bin_info_has_nx (SBinInfo *info);
+bool s_bin_info_has_bigendian (SBinInfo *info);
+bool s_bin_info_has_lit (SBinInfo *info);
+bool s_bin_info_has_signature (SBinInfo *info);
 
 int s_bin_io_open (SBinIo *io, const char *uri);
 bool s_bin_io_close (SBinIo *io, int fd);
