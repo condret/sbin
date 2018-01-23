@@ -35,14 +35,96 @@ typedef struct s_bin_symbol_t {
 	ut32 size;
 } SBinSymbol;
 
+typedef struct s_bin_import_t {
+	char *name;
+	const char *bind;
+	const char *type;
+	char *classname;
+	char *descriptor;
+	ut32 ordinal;
+	ut32 visibility;
+} SBinImport;
+
+typedef struct s_bin_reloc_t {
+	ut8 type;
+	ut8 additive;
+	SBinSymbol *symbol;
+	SBinImport *import;
+	st64 addend;
+	ut64 vaddr;
+	ut64 paddr;
+	ut32 visibility;
+	/* is_ifunc: indirect function, `addend` points to a resolver function
+	 * that returns the actual relocation value, e.g. chooses
+	 * an optimized version depending on the CPU.
+	 * cf. https://gcc.gnu.org/onlinedocs/gcc/Common-Function-Attributes.html
+	 */
+	bool is_ifunc;
+} SBinReloc;
+
+typedef struct r_bin_string_t {
+	// TODO: rename string->name (avoid colisions)
+	char *string;
+	ut64 vaddr;
+	ut64 paddr;
+	ut32 ordinal;
+	ut32 size; // size of buffer containing the string in bytes
+	ut32 length; // length of string in chars
+	char type; // Ascii Wide cp850 utf8 base64 ...
+} SBinString;
+
+typedef struct s_bin_field_t {
+	ut64 vaddr;
+	ut64 paddr;
+	int size;
+	ut32 visibility;
+	char *name;
+	char *type;
+	char *comment;
+	char *format;
+	ut64 flags;
+} SBinField;
+
+typedef struct s_bin_header_t {
+	ut64 offset;
+	char *name;
+	char *value;
+	ut32 size;
+} SBinHeader;
+
+typedef bool (*SBinEntryCb) (void *user, SBinEntry entry);
+typedef bool (*SBinSectionCb) (void *user, SBinSection section);
+typedef bool (*SBinLineCb) (void *user, SBinDwarfRow line);
 typedef bool (*SBinSymbolCb) (void *user, SBinSymbol symbol);
+typedef bool (*SBinImportCb) (void *user, SBinImport import);
+typedef bool (*SBinStringCb) (void *user, SBinString string);
+typedef bool (*SBinFieldCb) (void *user, SBinField field);
+typedef bool (*SBinLibCb) (void *user, char *lib);
+typedef bool (*SBinRelocCb) (void *user, SBinReloc reloc);
+typedef bool (*SBinClassCb) (void *user, SBinClass class);
+typedef bool (*SBinHeaderCb) (void *user, SBinHeader header);
 
 typedef struct s_bin_plugin_t {
 	const char *name;
 	const char *desc;
 	const char *license;
-	bool (*symbols)(void *user, SBinSymbolCb add_symbol, SBinFile *arch);
+	int (*init)(void *user);
+	int (*fini)(void *user);
+	SBinInfo *(*info)(SBinFile *bfile);
+	bool (*entries)(SBinFile *bfile, void *user, SBinEntryCb add_entry);
+	bool (*sections)(SBinFile *bfile, void *user, SBinSectionCb add_section);
+	bool (*lines)(SBinFile *bfile, void *user, SBinLineCb add_line);
+	bool (*symbols)(SBinFile *bfile, void *user, SBinSymbolCb add_symbol);
 	//plugin should go for add_symbol(user, symbol) on each symbol it finds
+	bool (*imports)(SBinFile *bfile, void *user, SBinImportCb add_import);
+	bool (*strings)(SBinFile *bfile, void *user, SBinStringCb add_string);
+	bool (*fields)(SBinFile *bfile, void *user, SBinFieldCb add_field);
+	bool (*libs)(SBinFile *bfile, void *user, SBinLibCb add_lib);
+	bool (*relocs)(SBinFile *bfile, void *user, SBinRelocCb add_reloc);
+	bool (*classes)(SBinFile *bfile, void *user, SBinClassCb add_class);
+	SdbList/*<SBinMem>*/* (*mem)(SBinFile *bfile);		//this kind sucks, bc it must stay list for now, since that list describes a tree
+	bool (*patch_relocs)(SBinFile *bfile, void *user, SBinRelocCb add_reloc);	//is this correct?
+	void *user;	//move this into Binfile
 } SBinPlugin;
 
 typedef struct s_bin_info_t {
